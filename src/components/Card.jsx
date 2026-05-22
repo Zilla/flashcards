@@ -1,0 +1,33 @@
+import React from 'react';
+
+export default function Card({ front, back, isFlipped, onFlip }) {
+  const checkIsLong = (text) => {
+    if (!text) return false;
+    return text.length > 120 || text.split('\n').length > 3;
+  };
+
+  const isFrontLong = checkIsLong(front);
+  const isBackLong = checkIsLong(back);
+
+  return (
+    <div className="card-container" onClick={onFlip}>
+      <div className={`card-inner ${isFlipped ? 'is-flipped' : ''}`}>
+        {/* Front Face */}
+        <div className="card-face card-front">
+          <div className="card-face-title">Question / Prompt</div>
+          <div className="card-text-wrapper">
+            <div className={`card-text ${isFrontLong ? 'is-long' : ''}`}>{front}</div>
+          </div>
+        </div>
+        
+        {/* Back Face */}
+        <div className="card-face card-back">
+          <div className="card-face-title">Answer</div>
+          <div className="card-text-wrapper">
+            <div className={`card-text ${isBackLong ? 'is-long' : ''}`}>{back}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
