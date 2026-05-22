@@ -1,5 +1,7 @@
 # Antigravity Flashcards ⚡
 
+[![Co-authored with AI](https://img.shields.io/badge/Co--authored%20with-AI--Assisted-6366f1?style=flat-square)](#)
+
 An elegant, glassmorphic flashcard desktop-friendly web application for practicing languages, studying behavior, or studying anything else. Built using **React (Vite)** on the frontend and **Express.js** on the backend, storing flashcard sets directly inside your directories as human-readable JSON files.
 
 This project is fully vibe coded because it's 2026 and Skynet has won.
@@ -85,9 +87,7 @@ Simply double-click the **`start.bat`** file in this project root. It will:
 
 ---
 
-## Future Roadmap
-
-- **Android Mobile App Port**: In the future, this app can be packaged to run natively on mobile devices.
-  - *Option A (Capacitor)*: Wrap the current React + CSS frontend into a WebView-based `.apk`. This requires minimal code changes and uses device storage (e.g. SQLite/Preferences) instead of the Node backend. (Recommended)
-  - *Option B (PWA)*: Convert it into a Progressive Web App to install directly from the mobile browser and run offline.
-  - *Option C (React Native)*: Rewrite frontend components into native React Native views for a 100% native mobile feel.
+## 🤖 AI Attribution & Development
+This project was built in partnership with **Antigravity**, an advanced agentic coding assistant developed by **Google DeepMind**. 
+* **How it was built:** The structure, styling (glassmorphism CSS layouts), backend integrations (Express.js 5 compatibility), and Markdown/LaTeX implementations were entirely co-written, debugged, and optimized through pair-programming interactions with AI agents.
+* **Vibe-coding ratio:** ~95% AI-generated codebase, guided and refined by human specifications.
