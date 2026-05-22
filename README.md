@@ -13,6 +13,7 @@ This project is fully vibe coded because it's 2026 and Skynet has won.
 - **Review Missed Cards**: Study summary lists exactly what you got wrong and lets you run a session practicing *only* those missed cards.
 - **Configurable Multi-Path Search**: Store flashcard sets anywhere on your machine. The app scans all configured paths and aggregates sets in a single unified dashboard.
 - **Dynamic Set Editor**: Add, edit, or delete cards dynamically with text area inputs (for multi-line strings), name your sets, and choose exactly where on your computer to save them.
+- **Markdown & LaTeX Math Formatting**: Use Markdown formatting (bold, italics, lists, and inline/block code) and typeset standard LaTeX mathematical formulas using KaTeX.
 - **Keyboard Shortcuts**: Designed for high-speed training.
 
 ---
@@ -31,6 +32,22 @@ This project is fully vibe coded because it's 2026 and Skynet has won.
 
 ### In the Card Editor
 - **`Alt` + `N`**: Add a new flashcard. This automatically appends a new card row, focuses your cursor on the new **Front (Prompt)** textarea, and scrolls it smoothly into view.
+
+---
+
+## Markdown & Math Syntax
+
+Both the front and back of cards parse standard Markdown formatting and LaTeX equations:
+
+* **Bold Text**: Use `**text**` (accented with your theme's cyan secondary color).
+* **Italics**: Use `*text*` or `_text_`.
+* **Bullet and Numbered Lists**: Use standard `-`, `*`, or `1.` delimiters.
+* **Code highlighting**: Use single backticks `` `const x = 5` `` for inline code, or triple backticks (`` ``` ``) for blocks.
+* **Inline LaTeX Formulas**: Wrap math expressions in single dollar signs, e.g. `$\sqrt{a^2 + b^2}$`.
+* **Block LaTeX Equations**: Wrap larger centered equations in double dollar signs:
+  ```latex
+  $$ \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi} $$
+  ```
 
 ---
 

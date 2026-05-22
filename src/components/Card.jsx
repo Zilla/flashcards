@@ -1,4 +1,7 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 export default function Card({ front, back, isFlipped, onFlip }) {
   const checkIsLong = (text) => {
@@ -16,7 +19,11 @@ export default function Card({ front, back, isFlipped, onFlip }) {
         <div className="card-face card-front">
           <div className="card-face-title">Question / Prompt</div>
           <div className="card-text-wrapper">
-            <div className={`card-text ${isFrontLong ? 'is-long' : ''}`}>{front}</div>
+            <div className={`card-text ${isFrontLong ? 'is-long' : ''}`}>
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {front}
+              </ReactMarkdown>
+            </div>
           </div>
         </div>
         
@@ -24,7 +31,11 @@ export default function Card({ front, back, isFlipped, onFlip }) {
         <div className="card-face card-back">
           <div className="card-face-title">Answer</div>
           <div className="card-text-wrapper">
-            <div className={`card-text ${isBackLong ? 'is-long' : ''}`}>{back}</div>
+            <div className={`card-text ${isBackLong ? 'is-long' : ''}`}>
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {back}
+              </ReactMarkdown>
+            </div>
           </div>
         </div>
       </div>
