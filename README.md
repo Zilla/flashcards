@@ -2,6 +2,8 @@
 
 An elegant, glassmorphic flashcard desktop-friendly web application for practicing languages, studying behavior, or studying anything else. Built using **React (Vite)** on the frontend and **Express.js** on the backend, storing flashcard sets directly inside your directories as human-readable JSON files.
 
+This project is fully vibe coded because it's 2026 and Skynet has won.
+
 ---
 
 ## Features
