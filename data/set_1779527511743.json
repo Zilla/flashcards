@@ -1,0 +1,22 @@
+{
+  "id": "set_1779527511743",
+  "name": "Image Card Test",
+  "cards": [
+    {
+      "front": "![image.png](/api/assets?setPath=L%3A%5CProject%5Cflashcards%5Cdata%5Cset_1779527511743.json&filename=img_1779527672069_tz2ovp.png)",
+      "back": "American Pit Bull Terrier"
+    },
+    {
+      "front": "![Screenshot 2026-05-23 111416.png](/api/assets?setPath=L%3A%5CProject%5Cflashcards%5Cdata%5Cset_1779527511743.json&filename=img_1779527672077_wzej4m.png)",
+      "back": "German Shepherd"
+    },
+    {
+      "front": "![Screenshot 2026-05-23 110323.png](/api/assets?setPath=L%3A%5CProject%5Cflashcards%5Cdata%5Cset_1779527511743.json&filename=img_1779527726450_2t2nz6.png)",
+      "back": "Welsh Corgi"
+    },
+    {
+      "front": "You can have **text** as well as **images** on the same card\n\n\n![image.png](/api/assets?setPath=L%3A%5CProject%5Cflashcards%5Cdata%5Cset_1779527511743.json&filename=img_1779527824722_ydxkj5.png)\n\n-> Isn't that cool? <-",
+      "back": "Golden Retriever"
+    }
+  ]
+}

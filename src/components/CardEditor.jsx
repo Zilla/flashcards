@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Card from './Card';
 
 export default function CardEditor({ editingSet, onSave, onCancel }) {
   const [setName, setSetName] = useState('');
@@ -9,6 +10,67 @@ export default function CardEditor({ editingSet, onSave, onCancel }) {
   const [showCustomDirInput, setShowCustomDirInput] = useState(false);
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingUploads, setPendingUploads] = useState({});
+  const [previewIndex, setPreviewIndex] = useState(null);
+  const [previewFlipped, setPreviewFlipped] = useState(false);
+
+  const insertAtCursor = (elementId, textToInsert) => {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const text = el.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+
+    const newValue = before + textToInsert + after;
+    
+    const isFront = elementId.startsWith('front-input-');
+    const index = parseInt(elementId.replace('front-input-', '').replace('back-input-', ''));
+    const field = isFront ? 'front' : 'back';
+    
+    handleCardChange(index, field, newValue);
+
+    setTimeout(() => {
+      el.focus();
+      const newCursorPos = start + textToInsert.length;
+      el.setSelectionRange(newCursorPos, newCursorPos);
+    }, 50);
+  };
+
+  const handleImageUpload = (file, elementId) => {
+    if (!file || !file.type.startsWith('image/')) {
+      setError('Only image files are supported.');
+      return;
+    }
+
+    const blobUrl = URL.createObjectURL(file);
+
+    setPendingUploads(prev => ({
+      ...prev,
+      [blobUrl]: file
+    }));
+
+    const markdownTag = `\n![${file.name}](${blobUrl})\n`;
+    insertAtCursor(elementId, markdownTag);
+  };
+
+  const handleDrop = (e, elementId) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleImageUpload(file, elementId);
+    }
+  };
+
+  const handlePaste = (e, elementId) => {
+    const file = e.clipboardData.files[0];
+    if (file) {
+      e.preventDefault();
+      handleImageUpload(file, elementId);
+    }
+  };
 
   // Fetch configuration search paths
   useEffect(() => {
@@ -145,6 +207,7 @@ export default function CardEditor({ editingSet, onSave, onCancel }) {
         payload.saveDirectory = savePath;
       }
 
+      // 1. Initial Save to get set ID and path
       const response = await fetch(url, {
         method,
         headers: {
@@ -158,7 +221,84 @@ export default function CardEditor({ editingSet, onSave, onCancel }) {
         throw new Error(errData.error || 'Failed to save card set');
       }
 
-      const savedSet = await response.json();
+      let savedSet = await response.json();
+      const finalFilePath = savedSet.filePath;
+
+      // 2. Upload pending image assets if any are present in the card contents
+      const activePendingKeys = Object.keys(pendingUploads).filter(blobUrl => 
+        cards.some(c => c.front.includes(blobUrl) || c.back.includes(blobUrl))
+      );
+
+      if (activePendingKeys.length > 0) {
+        const updatedCards = [...cards];
+        
+        for (const blobUrl of activePendingKeys) {
+          const file = pendingUploads[blobUrl];
+          const arrayBuffer = await file.arrayBuffer();
+          
+          const uploadResponse = await fetch('/api/sets/assets', {
+            method: 'POST',
+            headers: {
+              'Content-Type': file.type,
+              'x-set-path': finalFilePath,
+              'x-file-name': file.name
+            },
+            body: arrayBuffer
+          });
+
+          if (!uploadResponse.ok) {
+            const errData = await uploadResponse.json();
+            throw new Error(errData.error || `Failed to upload image ${file.name}`);
+          }
+
+          const { url: serverUrl } = await uploadResponse.json();
+
+          // Replace the local Blob URLs with the server URLs in all cards
+          for (let i = 0; i < updatedCards.length; i++) {
+            updatedCards[i] = {
+              ...updatedCards[i],
+              front: updatedCards[i].front.replaceAll(blobUrl, serverUrl),
+              back: updatedCards[i].back.replaceAll(blobUrl, serverUrl)
+            };
+          }
+        }
+
+        // 3. Save the card set again with finalized server asset URLs
+        const finalizePayload = {
+          filePath: finalFilePath,
+          name: setName.trim(),
+          cards: updatedCards.map(c => ({
+            front: c.front.trim(),
+            back: c.back.trim()
+          }))
+        };
+
+        const finalizeResponse = await fetch('/api/sets', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(finalizePayload)
+        });
+
+        if (!finalizeResponse.ok) {
+          const errData = await finalizeResponse.json();
+          throw new Error(errData.error || 'Failed to finalize card set with server image links.');
+        }
+
+        savedSet = await finalizeResponse.json();
+      }
+
+      // Cleanup local Blob URLs
+      activePendingKeys.forEach(blobUrl => {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch (revErr) {
+          console.error('Error revoking Object URL:', revErr);
+        }
+      });
+      setPendingUploads({});
+
       onSave(savedSet);
     } catch (err) {
       console.error(err);
@@ -252,39 +392,201 @@ export default function CardEditor({ editingSet, onSave, onCancel }) {
 
           <div className="editor-cards-section">
             {cards.map((card, idx) => (
-              <div key={idx} className="editor-card-row">
-                <span className="card-index-tag">#{idx + 1}</span>
-                
-                <div className="editor-inputs">
-                  <textarea
-                    id={`front-input-${idx}`}
-                    className="textarea-input"
-                    placeholder="Front side (Prompt / Question)"
-                    value={card.front}
-                    onChange={(e) => handleCardChange(idx, 'front', e.target.value)}
-                    disabled={isSaving}
-                    required
-                  />
-                  <textarea
-                    className="textarea-input"
-                    placeholder="Back side (Answer / Explanation)"
-                    value={card.back}
-                    onChange={(e) => handleCardChange(idx, 'back', e.target.value)}
-                    disabled={isSaving}
-                    required
-                  />
+              <div key={idx} className="editor-card-row" style={{ flexDirection: 'column' }}>
+                <div style={{ display: 'flex', gap: '16px', width: '100%', alignItems: 'flex-start' }}>
+                  <span className="card-index-tag" style={{ alignSelf: 'flex-start', marginTop: '12px' }}>#{idx + 1}</span>
+                  
+                  <div className="editor-inputs">
+                    {/* Front input container */}
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                      <textarea
+                        id={`front-input-${idx}`}
+                        className="textarea-input"
+                        style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderBottom: 'none', margin: 0, minHeight: '90px' }}
+                        placeholder="Front side (Prompt / Question)"
+                        value={card.front}
+                        onChange={(e) => handleCardChange(idx, 'front', e.target.value)}
+                        onDrop={(e) => handleDrop(e, `front-input-${idx}`)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onPaste={(e) => handlePaste(e, `front-input-${idx}`)}
+                        disabled={isSaving}
+                        required
+                      />
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '6px 12px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                        border: '1px solid var(--glass-border)',
+                        borderBottomLeftRadius: 'var(--radius-sm)',
+                        borderBottomRightRadius: 'var(--radius-sm)',
+                      }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          Drag/drop or paste image
+                        </span>
+                        <label
+                          htmlFor={`file-input-front-${idx}`}
+                          style={{
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            color: 'var(--accent-secondary)',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            userSelect: 'none'
+                          }}
+                          title="Upload Image"
+                        >
+                          📷 Upload
+                        </label>
+                        <input
+                          id={`file-input-front-${idx}`}
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleImageUpload(file, `front-input-${idx}`);
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Back input container */}
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                      <textarea
+                        id={`back-input-${idx}`}
+                        className="textarea-input"
+                        style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderBottom: 'none', margin: 0, minHeight: '90px' }}
+                        placeholder="Back side (Answer / Explanation)"
+                        value={card.back}
+                        onChange={(e) => handleCardChange(idx, 'back', e.target.value)}
+                        onDrop={(e) => handleDrop(e, `back-input-${idx}`)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onPaste={(e) => handlePaste(e, `back-input-${idx}`)}
+                        disabled={isSaving}
+                        required
+                      />
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '6px 12px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                        border: '1px solid var(--glass-border)',
+                        borderBottomLeftRadius: 'var(--radius-sm)',
+                        borderBottomRightRadius: 'var(--radius-sm)',
+                      }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          Drag/drop or paste image
+                        </span>
+                        <label
+                          htmlFor={`file-input-back-${idx}`}
+                          style={{
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            color: 'var(--accent-secondary)',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            userSelect: 'none'
+                          }}
+                          title="Upload Image"
+                        >
+                          📷 Upload
+                        </label>
+                        <input
+                          id={`file-input-back-${idx}`}
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleImageUpload(file, `back-input-${idx}`);
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions column */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignSelf: 'stretch', justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${previewIndex === idx ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => {
+                        if (previewIndex === idx) {
+                          setPreviewIndex(null);
+                        } else {
+                          setPreviewIndex(idx);
+                          setPreviewFlipped(false);
+                        }
+                      }}
+                      disabled={isSaving}
+                      title="Toggle live preview"
+                      style={{ minWidth: '40px', padding: '8px 4px' }}
+                    >
+                      👁️
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      onClick={() => handleRemoveCard(idx)}
+                      disabled={isSaving || cards.length === 1}
+                      style={{ minWidth: '40px', padding: '8px 4px' }}
+                      title="Remove card"
+                    >
+                      🗑
+                    </button>
+                  </div>
                 </div>
 
-                <button
-                  type="button"
-                  className="btn btn-danger btn-sm"
-                  onClick={() => handleRemoveCard(idx)}
-                  disabled={isSaving || cards.length === 1}
-                  style={{ alignSelf: 'center' }}
-                  title="Remove card"
-                >
-                  🗑
-                </button>
+                {/* Inline Preview Container */}
+                {previewIndex === idx && (
+                  <div style={{ 
+                    width: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    marginTop: '20px', 
+                    padding: '20px', 
+                    backgroundColor: 'rgba(0, 0, 0, 0.25)', 
+                    borderRadius: 'var(--radius-md)', 
+                    border: '1px solid var(--glass-border)',
+                    animation: 'fadeIn 0.25s ease-out'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '16px', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Live Card Preview (Click Card to Flip)
+                      </span>
+                      <button 
+                        type="button" 
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setPreviewIndex(null)}
+                        style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+                      >
+                        Close Preview
+                      </button>
+                    </div>
+                    <div style={{ width: '100%', maxWidth: '500px', margin: '0 auto' }}>
+                      <Card 
+                        front={card.front} 
+                        back={card.back} 
+                        isFlipped={previewFlipped} 
+                        onFlip={() => setPreviewFlipped(!previewFlipped)} 
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

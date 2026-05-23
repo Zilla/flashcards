@@ -261,6 +261,46 @@ app.put('/api/sets', async (req, res) => {
 
     await fs.writeFile(absolutePath, JSON.stringify(updatedSet, null, 2), 'utf-8');
 
+    // Clean up orphaned assets if they exist
+    const setDir = path.dirname(absolutePath);
+    const setId = updatedSet.id;
+    const assetsDir = path.join(setDir, `${setId}_assets`);
+
+    if (existsSync(assetsDir)) {
+      try {
+        const referencedFiles = new Set();
+        // Match filename parameter in asset URLs
+        const imageRegex = /filename=([^&\s"')]+)/g;
+
+        updatedSet.cards.forEach(card => {
+          let match;
+          if (card.front) {
+            imageRegex.lastIndex = 0;
+            while ((match = imageRegex.exec(card.front)) !== null) {
+              referencedFiles.add(decodeURIComponent(match[1]));
+            }
+          }
+          if (card.back) {
+            imageRegex.lastIndex = 0;
+            while ((match = imageRegex.exec(card.back)) !== null) {
+              referencedFiles.add(decodeURIComponent(match[1]));
+            }
+          }
+        });
+
+        // Read all files currently in the assets folder
+        const files = await fs.readdir(assetsDir);
+        for (const file of files) {
+          if (!referencedFiles.has(file)) {
+            await fs.unlink(path.join(assetsDir, file));
+            console.log(`Cleaned up orphaned asset: ${file}`);
+          }
+        }
+      } catch (cleanupErr) {
+        console.error('Failed to clean up orphaned assets:', cleanupErr);
+      }
+    }
+
     res.json({
       id: updatedSet.id,
       name: updatedSet.name,
@@ -286,11 +326,94 @@ app.delete('/api/sets', async (req, res) => {
       return res.status(404).json({ error: 'Card set file not found' });
     }
 
+    // Determine assets folder path to clean it up
+    const setDir = path.dirname(absolutePath);
+    const setId = path.basename(absolutePath, '.json');
+    const assetsDir = path.join(setDir, `${setId}_assets`);
+
     await fs.unlink(absolutePath);
+
+    // Clean up assets if they exist
+    try {
+      if (existsSync(assetsDir)) {
+        await fs.rm(assetsDir, { recursive: true, force: true });
+      }
+    } catch (rmErr) {
+      console.error(`Failed to clean up assets dir ${assetsDir}:`, rmErr);
+    }
+
     res.json({ message: 'Card set deleted successfully' });
   } catch (err) {
     console.error('Error deleting set:', err);
     res.status(500).json({ error: 'Failed to delete card set' });
+  }
+});
+
+// API: Upload asset file for a card set
+app.post('/api/sets/assets', express.raw({ type: 'image/*', limit: '10mb' }), async (req, res) => {
+  try {
+    const setPath = req.headers['x-set-path'];
+    const originalName = req.headers['x-file-name'];
+    
+    if (!setPath) {
+      return res.status(400).json({ error: 'x-set-path header is required' });
+    }
+    if (!originalName) {
+      return res.status(400).json({ error: 'x-file-name header is required' });
+    }
+
+    const absoluteSetPath = path.resolve(setPath);
+    const setDir = path.dirname(absoluteSetPath);
+    const setId = path.basename(absoluteSetPath, '.json');
+
+    const assetsDirName = `${setId}_assets`;
+    const absoluteAssetsDir = path.join(setDir, assetsDirName);
+    await ensureDir(absoluteAssetsDir);
+
+    const ext = path.extname(originalName) || '.png';
+    const uniqueName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
+    const targetFilePath = path.join(absoluteAssetsDir, uniqueName);
+
+    await fs.writeFile(targetFilePath, req.body);
+
+    res.json({
+      filename: uniqueName,
+      url: `/api/assets?setPath=${encodeURIComponent(absoluteSetPath)}&filename=${encodeURIComponent(uniqueName)}`
+    });
+  } catch (err) {
+    console.error('Error uploading asset:', err);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+// API: Fetch asset file for a card set
+app.get('/api/assets', async (req, res) => {
+  try {
+    const { setPath, filename } = req.query;
+    if (!setPath || !filename) {
+      return res.status(400).json({ error: 'setPath and filename parameters are required' });
+    }
+
+    const absoluteSetPath = path.resolve(setPath);
+    const setDir = path.dirname(absoluteSetPath);
+    const setId = path.basename(absoluteSetPath, '.json');
+
+    const assetsDir = path.join(setDir, `${setId}_assets`);
+    const assetFilePath = path.join(assetsDir, filename);
+
+    const resolvedAssetPath = path.resolve(assetFilePath);
+    if (!resolvedAssetPath.startsWith(assetsDir)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (!existsSync(resolvedAssetPath)) {
+      return res.status(404).json({ error: 'Asset not found' });
+    }
+
+    res.sendFile(resolvedAssetPath);
+  } catch (err) {
+    console.error('Error fetching asset:', err);
+    res.status(500).json({ error: 'Failed to retrieve asset' });
   }
 });
 

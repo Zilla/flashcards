@@ -32,7 +32,7 @@
     },
     {
       "front": "**Bold Text**",
-      "back": "Some **text** here can **bold**"
+      "back": "Some **text** here can be **bold**"
     },
     {
       "front": "Inline code",
@@ -57,6 +57,10 @@
     {
       "front": "Math block 2",
       "back": "```math\n\\zeta (s)= 2^s\\pi^{s-1}\\sin\\left(\\frac{\\pi s}{2}\\right)\\Gamma (1-s)\\zeta (1-s)\n```"
+    },
+    {
+      "front": "Centered text",
+      "back": "It's possible to have centered text:\n\n-> See? <-\n\nVery cool"
     }
   ]
 }

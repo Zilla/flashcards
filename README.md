@@ -16,6 +16,9 @@ This project is fully vibe coded because it's 2026 and Skynet has won.
 - **Configurable Multi-Path Search**: Store flashcard sets anywhere on your machine. The app scans all configured paths and aggregates sets in a single unified dashboard.
 - **Dynamic Set Editor**: Add, edit, or delete cards dynamically with text area inputs (for multi-line strings), name your sets, and choose exactly where on your computer to save them.
 - **Markdown & LaTeX Math Formatting**: Use Markdown formatting (bold, italics, lists, and inline/block code) and typeset standard LaTeX mathematical formulas using KaTeX.
+- **Image Support**: Drag-and-drop, clipboard paste, or upload images directly in the card editor. Images are stored in an asset folder next to the set JSON and are cleaned up automatically when cards or sets are deleted.
+- **Interactive Live Preview**: Toggle inline 3D card previews (`👁️`) inside the editor to verify image formatting and sizing before saving.
+- **Smart Scroll Focus**: Hovering and scrolling on long cards scrolls the card text wrapper instead of the parent page.
 - **Keyboard Shortcuts**: Designed for high-speed training.
 
 ---
@@ -44,6 +47,7 @@ Both the front and back of cards parse standard Markdown formatting and LaTeX eq
 * **Bold Text**: Use `**text**` (accented with your theme's cyan secondary color).
 * **Italics**: Use `*text*` or `_text_`.
 * **Bullet and Numbered Lists**: Use standard `-`, `*`, or `1.` delimiters.
+* **Centered Text**: Wrap text with `->` and `<-` markers (e.g. `-> Centered text <-`) to center-align a paragraph on the card face.
 * **Code highlighting**: Use single backticks `` `const x = 5` `` for inline code, or triple backticks (`` ``` ``) for blocks.
 * **Inline LaTeX Formulas**: Wrap math expressions in single dollar signs, e.g. `$\sqrt{a^2 + b^2}$`.
 * **Block LaTeX Equations**: Wrap larger centered equations in double dollar signs:
