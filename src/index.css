@@ -588,7 +588,6 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 1.8rem;
   font-family: var(--font-heading);
   line-height: 1.4;
-  white-space: pre-wrap;
   word-break: break-word;
   width: 100%;
   text-align: center;
@@ -604,7 +603,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Markdown HTML Elements & KaTeX Styling inside Cards */
 .card-text p {
-  margin-bottom: 0.75rem;
+  white-space: pre-wrap;
+  margin-bottom: 0.35rem;
 }
 
 .card-text p:last-child {
@@ -667,11 +667,26 @@ h1, h2, h3, h4, h5, h6 {
 .card-text ul, .card-text ol {
   text-align: left;
   margin-left: 24px;
-  margin-bottom: 0.75rem;
+  margin-top: 4px;
+  margin-bottom: 0.35rem;
+  padding-left: 0;
+  white-space: normal;
 }
 
 .card-text li {
-  margin-bottom: 0.25rem;
+  white-space: pre-wrap;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.card-text li ul, .card-text li ol {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.card-text li p {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .card-text .katex-display {

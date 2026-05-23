@@ -28,6 +28,14 @@ const markdownComponents = {
   }
 };
 
+const preprocessMarkdown = (text) => {
+  if (!text) return '';
+  return text.replace(/\n{3,}/g, (match) => {
+    const count = match.length - 2;
+    return '\n\n' + Array(count).fill('\u00A0').join('\n\n') + '\n\n';
+  });
+};
+
 export default function Card({ front, back, isFlipped, onFlip }) {
   const frontScrollRef = useRef(null);
   const backScrollRef = useRef(null);
@@ -80,8 +88,11 @@ export default function Card({ front, back, isFlipped, onFlip }) {
     return text.length > 120 || text.split('\n').length > 3;
   };
 
-  const isFrontLong = checkIsLong(front);
-  const isBackLong = checkIsLong(back);
+  const processedFront = preprocessMarkdown(front);
+  const processedBack = preprocessMarkdown(back);
+
+  const isFrontLong = checkIsLong(processedFront);
+  const isBackLong = checkIsLong(processedBack);
 
   return (
     <div className="card-container" onClick={onFlip}>
@@ -97,7 +108,7 @@ export default function Card({ front, back, isFlipped, onFlip }) {
                 urlTransform={(url) => url}
                 components={markdownComponents}
               >
-                {front}
+                {processedFront}
               </ReactMarkdown>
             </div>
           </div>
@@ -114,7 +125,7 @@ export default function Card({ front, back, isFlipped, onFlip }) {
                 urlTransform={(url) => url}
                 components={markdownComponents}
               >
-                {back}
+                {processedBack}
               </ReactMarkdown>
             </div>
           </div>
