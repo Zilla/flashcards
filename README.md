@@ -18,7 +18,6 @@ This project is fully vibe coded.
 - **Markdown & LaTeX Math Formatting**: Use Markdown formatting (bold, italics, lists, and inline/block code) and typeset standard LaTeX mathematical formulas using KaTeX.
 - **Image Support**: Drag-and-drop, clipboard paste, or upload images directly in the card editor. Images are stored in an asset folder next to the set JSON and are cleaned up automatically when cards or sets are deleted.
 - **Interactive Live Preview**: Toggle inline 3D card previews (`👁️`) inside the editor to verify image formatting and sizing before saving.
-- **Smart Scroll Focus**: Hovering and scrolling on long cards scrolls the card text wrapper instead of the parent page.
 - **Keyboard Shortcuts**: Designed for high-speed training.
 
 ---
@@ -59,12 +58,19 @@ Both the front and back of cards parse standard Markdown formatting and LaTeX eq
 
 ## How to Run
 
-### Windows (Recommended)
+### Windows
 Simply double-click the **`start.bat`** file in this project root. It will:
 1. Verify Node.js is installed.
 2. Run `npm install` automatically if running for the first time.
 3. Automatically launch the application in your default web browser at [http://localhost:5173](http://localhost:5173).
 4. Run both frontend and backend servers concurrently.
+
+### Linux & macOS
+Run the **`start.sh`** script in a terminal:
+```bash
+./start.sh
+```
+*(Make sure the script is executable by running `chmod +x start.sh` first if necessary.)* This script will perform the same setup checks and startup steps as the Windows version.
 
 ### Manual Launch (Any OS)
 1. Open a terminal in the project directory.
